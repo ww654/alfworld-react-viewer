@@ -1,0 +1,55 @@
+{
+  "pick2": [
+    {
+      "lesson": "The agent wasted time heating an empty mug and moving it around instead of first locating and picking up the two required objects from their initial locations.",
+      "source_game": 123,
+      "created_at": "2026-04-22"
+    },
+    {
+      "lesson": "The agent wasted time exhaustively opening empty containers instead of first searching for and picking up the required objects after finding them.",
+      "source_game": 127,
+      "created_at": "2026-04-22"
+    },
+    {
+      "lesson": "The agent wasted time opening all containers without first identifying the required objects, so it should prioritize searching for the task's specific items to avoid inefficient exploration.",
+      "source_game": 133,
+      "created_at": "2026-04-22"
+    }
+  ],
+  "heat": [
+    {
+      "lesson": "The agent wasted time exploring irrelevant objects instead of focusing on the coffeemachine and a heat source for the task.",
+      "source_game": 22,
+      "created_at": "2026-04-22"
+    },
+    {
+      "lesson": "The agent wasted time exploring irrelevant locations instead of focusing on the heat-related task, likely failing to identify and use the coffeemachine or stove.",
+      "source_game": 36,
+      "created_at": "2026-04-22"
+    }
+  ],
+  "clean": [
+    {
+      "lesson": "The agent wasted time exploring unrelated objects instead of focusing on using the towel with a dirty target or finding cleaning supplies like soap.",
+      "source_game": 90,
+      "created_at": "2026-04-22"
+    },
+    {
+      "lesson": "The agent wasted time exploring irrelevant containers instead of first identifying the specific objects and surfaces that needed cleaning.",
+      "source_game": 110,
+      "created_at": "2026-04-22"
+    },
+    {
+      "lesson": "The agent wasted time exploring irrelevant objects instead of first identifying the dirty target and the necessary cleaning tools, leading to a timeout.",
+      "source_game": 113,
+      "created_at": "2026-04-22"
+    }
+  ],
+  "cool": [
+    {
+      "lesson": "The agent wasted time exploring irrelevant locations instead of focusing on the coffeemachine and cooling-related objects for the \"cool\" task.",
+      "source_game": 66,
+      "created_at": "2026-04-22"
+    }
+  ]
+}
