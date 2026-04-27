@@ -2,12 +2,12 @@ import streamlit as st
 import json
 import os
 
-# --- 页面配置 ---
+# --- Page Configuration ---
 st.set_page_config(page_title="ALFWorld ReAct Agent Viewer", layout="wide")
 st.title("Revisiting ReAct on ALFWorld: Trajectory & Memory Viewer")
-st.markdown("深入探索 DeepSeek ReAct Agent 的失败模式、消融实验与情节记忆。")
+st.markdown("Dive deep into the failure modes, ablation studies, and episodic memory of the DeepSeek ReAct Agent.")
 
-# --- 数据加载与解析函数 ---
+# --- Data Loading and Parsing Functions ---
 @st.cache_data
 def load_json_data(filepath):
     if os.path.exists(filepath):
@@ -16,7 +16,7 @@ def load_json_data(filepath):
     return []
 
 def parse_model_response(response_text):
-    """解析模型输出，分离 Think 和 Act"""
+    """Parse model output to separate Think and Act."""
     think, act = response_text, ""
     if "Act:" in response_text:
         parts = response_text.split("Act:")
@@ -24,92 +24,92 @@ def parse_model_response(response_text):
         act = parts[1].strip()
     return think, act
 
-# 加载真实失败数据
+# Load actual failure data
 all_failures = load_json_data("all_failures.json")
 
-# --- 侧边栏导航 ---
+# --- Sidebar Navigation ---
 st.sidebar.header("Navigation")
 page = st.sidebar.radio("Select a View:", [
-    "1. 失败模式深度剖析 (Failure Modes)", 
-    "2. 提示词脆弱性：V2 vs V3 对比", 
-    "3. 情节记忆日志 (Memory Logs)"
+    "1. Failure Modes Analysis", 
+    "2. Prompt Vulnerability: V2 vs V3", 
+    "3. Episodic Memory Logs"
 ])
 
-# --- 页面 1：失败模式剖析 ---
-if page == "1. 失败模式深度剖析 (Failure Modes)":
-    st.header("1. 失败模式深度剖析 (Micro-Trajectory Viewer)")
-    st.write("逐步回放失败局数，自动检测模型预期动作与环境实际执行之间的偏差。")
+# --- Page 1: Failure Modes Analysis ---
+if page == "1. Failure Modes Analysis":
+    st.header("1. Micro-Trajectory Viewer (Failure Modes)")
+    st.write("Step-by-step replay of failed episodes, automatically detecting deviations between the model's intended action and the environment's actual execution.")
     
-    # 将 JSON 数据转为字典，方便按 game_id 查找
+    # Convert JSON data to dictionary for easy lookup by game_id
     failures_dict = {f"Game {game['game_id']} ({game['task_type']})": game for game in all_failures}
     
     if not failures_dict:
-        st.warning("请确保 all_failures.json 与本脚本在同一目录下。")
+        st.warning("Please ensure all_failures.json is in the same directory as this script.")
     else:
-        selected_game_key = st.selectbox("选择要回放的失败局:", list(failures_dict.keys()))
+        selected_game_key = st.selectbox("Select a failed episode to replay:", list(failures_dict.keys()))
         game_data = failures_dict[selected_game_key]
         
-        st.subheader(f"任务目标: {game_data['initial_obs'].split('Your task is to:')[-1].strip()}")
-        st.markdown(f"**总步数:** {game_data['total_steps']} 步 | **最终结果:** {game_data['result']}")
+        st.subheader(f"Task Objective: {game_data['initial_obs'].split('Your task is to:')[-1].strip()}")
+        st.markdown(f"**Total Steps:** {game_data['total_steps']} | **Final Result:** {game_data['result']}")
         
-        # 渲染每一步的微观轨迹
+        # Render micro-trajectory for each step
         for step in game_data['steps']:
             step_num = step['step']
             think, intended_act = parse_model_response(step['model_response'])
             actual_act = step['action_taken']
             obs = step['next_observation']
             
-            # 核心逻辑：检测静默替换
+            # Core logic: Detect silent substitution
             is_silently_substituted = intended_act.lower() != actual_act.lower()
             
-            # 使用 expander 折叠面板，如果发生替换则默认展开并加上警告表情
-            expander_title = f"Step {step_num}: {intended_act}" + (" ⚠️ [动作被替换]" if is_silently_substituted else "")
+            # Use expander, default to expanded and add warning emoji if substitution occurred
+            expander_title = f"Step {step_num}: {intended_act}" + (" ⚠️ [Action Replaced]" if is_silently_substituted else "")
             
             with st.expander(expander_title, expanded=is_silently_substituted):
-                st.markdown(f"**🧠 思考 (Think):** {think}")
+                st.markdown(f"**🧠 Think:** {think}")
                 
-                # 如果发生动作替换，进行红绿对比高亮
+                # Highlight with red/green columns if action substitution occurred
                 if is_silently_substituted:
-                    st.error("🚨 **触发静默替换 (Silent Substitution)!**")
+                    st.error("🚨 **Silent Substitution Triggered!**")
                     col1, col2 = st.columns(2)
                     with col1:
-                        st.info(f"**🤖 AI 试图执行:**\n`{intended_act}`")
+                        st.info(f"**🤖 AI Intended Act:**\n`{intended_act}`")
                     with col2:
-                        st.warning(f"**⚙️ 引擎实际执行:**\n`{actual_act}`")
-                    st.markdown(f"> **🌍 环境导致的结果:** `{obs}`")
-                    st.markdown("*分析：由于 AI 缺乏错误反馈，它仍以为自己执行了原始指令，导致推理链与物理环境脱节。*")
+                        st.warning(f"**⚙️ Engine Actually Executed:**\n`{actual_act}`")
+                    st.markdown(f"> **🌍 Environmental Observation:** `{obs}`")
+                    st.markdown("*Analysis: Lacking error feedback, the AI assumes its original command was executed, causing its reasoning chain to disconnect from the physical environment.*")
                 else:
-                    st.markdown(f"**🤖 动作 (Act):** `{intended_act}`")
-                    st.markdown(f"> **🌍 环境反馈 (Obs):** `{obs}`")
+                    st.markdown(f"**🤖 Act:** `{intended_act}`")
+                    st.markdown(f"> **🌍 Env Observation:** `{obs}`")
 
-# --- 页面 2：V2 vs V3 对比 ---
-elif page == "2. 提示词脆弱性：V2 vs V3 对比":
-    st.header("2. 提示词脆弱性：V2 与 V3 的确定性分歧")
-    st.write("展示仅仅一句话的 Prompt 差异，如何导致 V2 陷入死循环，而 V3 成功完成任务。")
+# --- Page 2: V2 vs V3 Comparison ---
+elif page == "2. Prompt Vulnerability: V2 vs V3":
+    st.header("2. Prompt Vulnerability: Deterministic Divergence in V2 vs V3")
+    st.write("Demonstrating how a single sentence prompt difference causes V2 to fall into an infinite loop, while V3 successfully completes the task.")
     
     col1, col2 = st.columns(2)
     
     with col1:
-        st.subheader("❌ V2：产生幻觉的循环路径")
-        st.error("**错误提示 (Flawed Hint):**\n'Pick up the first item, then search for the second.'")
-        st.markdown("在 ALFWorld 中，一旦拿取物品，`take` 动作就会从合法列表中消失。V2 被提示误导，陷入了不断的无效搜索。")
+        st.subheader("❌ V2: Hallucinated Loop Path")
+        st.error("**Flawed Hint:**\n'Pick up the first item, then search for the second.'")
+        st.markdown("In ALFWorld, once an item is held, the `take` action disappears from the valid list. Misled by the hint, V2 falls into endless invalid searching.")
         st.divider()
-        # 这里用作示例展示，你可以替换为读取你真实的 V2 txt 日志
+        # Placeholder display (can be replaced with actual V2 txt logs)
         st.markdown("**Step 12 🤖 Act:** `take apple 2 from fridge 1`")
-        st.markdown("⚠️ **实际执行:** `examine fridge 1` *(被静默替换)*")
+        st.markdown("⚠️ **Actually Executed:** `examine fridge 1` *(Silently Substituted)*")
         st.markdown("> *Obs:* `You examine the fridge 1.`")
         
         st.markdown("**Step 13 🤖 Act:** `take apple 2 from fridge 1`")
-        st.markdown("⚠️ **实际执行:** `close fridge 1` *(被静默替换)*")
+        st.markdown("⚠️ **Actually Executed:** `close fridge 1` *(Silently Substituted)*")
         st.markdown("> *Obs:* `You close the fridge 1.`")
-        st.caption("...模型在此陷入确定性死循环，直至超时。")
+        st.caption("...The model enters a deterministic infinite loop here until timeout.")
 
     with col2:
-        st.subheader("✅ V3：修正后的正确路径")
-        st.success("**修正提示 (Corrected Hint):**\n'Locate both items first, then pick and place sequentially.'")
-        st.markdown("V3 规避了底层环境约束，先完全定位，后依次抓取，成功完成 pick2。")
+        st.subheader("✅ V3: Corrected Successful Path")
+        st.success("**Corrected Hint:**\n'Locate both items first, then pick and place sequentially.'")
+        st.markdown("V3 avoids the underlying environmental constraints by fully locating both items first, then picking them sequentially, successfully completing pick2.")
         st.divider()
-        # 这里用作示例展示，你可以替换为读取你真实的 V3 txt/json 日志
+        # Placeholder display (can be replaced with actual V3 txt/json logs)
         st.markdown("**Step 10 🤖 Act:** `go to countertop 1`")
         st.markdown("> *Obs:* `On the countertop 1, you see an apple 1.`")
         
@@ -118,20 +118,37 @@ elif page == "2. 提示词脆弱性：V2 vs V3 对比":
         
         st.markdown("**Step 12 🤖 Act:** `take apple 1 from countertop 1`")
         st.markdown("> *Obs:* `You pick up the apple 1.`")
-        st.caption("...模型顺利拿取第一件物品并去放置。")
+        st.caption("...The model successfully picks up the first item and proceeds to place it.")
 
-# --- 页面 3：情节记忆 ---
-elif page == "3. 情节记忆日志 (Memory Logs)":
-    st.header("3. 跨局情节记忆 (Episodic Memory)")
-    st.write("这部分可以加载你的 memory.json，展示 AI 是如何从失败中吸取教训的。")
-    #Memory Log
+# --- Page 3: Episodic Memory ---
+elif page == "3. Episodic Memory Logs":
+    st.header("3. Cross-Episode Episodic Memory")
+    st.write("This section loads memory.json, demonstrating how the AI learns from failures across different episodes.")
+    
+    # Define read function
     def load_real_memory(filepath="memory.json"):
         if os.path.exists(filepath):
             with open(filepath, 'r', encoding='utf-8') as f:
                 return json.load(f)
         else:
-            st.warning(f"找不到文件: {filepath}")
+            st.warning(f"File not found: {filepath}. Please check the path.")
             return {}
-            
+
+    # Load real data
     real_memory = load_real_memory("memory.json")
 
+    # Render the dropdown and cards only if data is successfully read (prevents errors)
+    if real_memory:
+        # Dropdown: Select task type
+        task_type = st.selectbox("Select Task Type:", list(real_memory.keys()))
+        
+        st.subheader(f"Lessons for '{task_type}'")
+        
+        # Iterate and display specific lessons using green success boxes
+        for i, lesson in enumerate(real_memory[task_type]):
+            st.success(f"**Lesson {i+1}:** {lesson}")
+            
+        st.divider()
+        st.write("Raw JSON Data:")
+        # Display raw JSON structure at the bottom
+        st.json(real_memory)
